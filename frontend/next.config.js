@@ -116,7 +116,6 @@ const nextConfig = {
     config.resolve.alias = {
       ...config.resolve.alias,
       "@": path.resolve(__dirname, "src"),
-      "date-fns": path.dirname(require.resolve("date-fns/package.json")),
     };
 
     // 🔒 Externals simplificados para el servidor

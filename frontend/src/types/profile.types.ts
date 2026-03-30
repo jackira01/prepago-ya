@@ -28,7 +28,7 @@ export interface ProfileLocation {
 
 export interface ProfileVerification {
   _id?: string;
-  isVerified: boolean;
+  isVerified?: boolean;
   verifiedAt?: Date;
   verificationStatus?: 'pending' | 'check';
   verificationProgress?: number;
@@ -36,6 +36,28 @@ export interface ProfileVerification {
     type: string;
     status: 'pending' | 'approved' | 'rejected';
   }[];
+  steps?: {
+    selfieVerification?: {
+      isVerified?: boolean;
+      photo?: string;
+    };
+    documentVerification?: {
+      isVerified?: boolean;
+      frontPhoto?: string;
+      backPhoto?: string;
+    };
+    cartelVerification?: {
+      isVerified?: boolean;
+      mediaLink?: string;
+      mediaType?: 'video' | 'image';
+    };
+    videoCallRequested?: {
+      isVerified?: boolean;
+    };
+    socialMedia?: {
+      isVerified?: boolean;
+    };
+  };
 }
 
 // Interfaz base para perfiles compatible con backend

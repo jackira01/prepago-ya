@@ -49,6 +49,7 @@ export interface SearchFilters {
     identityVerified?: boolean;
     hasVideo?: boolean;
     documentVerified?: boolean;
+    noDeposito?: boolean;
   };
 
   // Estados

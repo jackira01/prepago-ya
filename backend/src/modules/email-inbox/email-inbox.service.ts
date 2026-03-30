@@ -1,14 +1,14 @@
 import { Types } from 'mongoose';
+import {
+  InboxEmailListResponse,
+  InboxEmailQuery,
+  InboxEmailResponse,
+  IncomingEmailData,
+  MarkAsReadRequest
+} from '../../types/email-inbox.types';
 import { AppError } from '../../utils/AppError';
 import { logger } from '../../utils/logger';
-import { EmailInboxModel, IEmailInbox } from './email-inbox.model';
-import { 
-  IncomingEmailData, 
-  InboxEmailQuery, 
-  InboxEmailResponse, 
-  InboxEmailListResponse,
-  MarkAsReadRequest 
-} from '../../types/email-inbox.types';
+import { type IEmailInbox, EmailInboxModel } from './email-inbox.model';
 
 export class EmailInboxService {
   /**
@@ -17,10 +17,10 @@ export class EmailInboxService {
   static async storeIncomingEmail(emailData: IncomingEmailData): Promise<IEmailInbox> {
     try {
       // Verificar si el correo ya existe por messageId
-      const existingEmail = await EmailInboxModel.findOne({ 
-        messageId: emailData.messageId 
+      const existingEmail = await EmailInboxModel.findOne({
+        messageId: emailData.messageId
       });
-      
+
       if (existingEmail) {
         logger.warn(`Email with messageId ${emailData.messageId} already exists`);
         return existingEmail;
@@ -41,7 +41,7 @@ export class EmailInboxService {
 
       const savedEmail = await email.save();
       logger.info(`Stored incoming email with ID: ${savedEmail._id}`);
-      
+
       return savedEmail;
     } catch (error: any) {
       logger.error('Error storing incoming email:', error);
@@ -66,21 +66,21 @@ export class EmailInboxService {
 
       // Construir filtros
       const filters: any = {};
-      
+
       if (from) {
         filters['from.email'] = { $regex: from, $options: 'i' };
       }
-      
+
       if (subject) {
         filters.subject = { $regex: subject, $options: 'i' };
       }
-      
+
       if (dateFrom || dateTo) {
         filters.receivedAt = {};
         if (dateFrom) filters.receivedAt.$gte = new Date(dateFrom);
         if (dateTo) filters.receivedAt.$lte = new Date(dateTo);
       }
-      
+
       if (typeof isRead === 'boolean') {
         filters.isRead = isRead;
       }
@@ -179,26 +179,26 @@ export class EmailInboxService {
   static async markAsRead(request: MarkAsReadRequest): Promise<{ modifiedCount: number }> {
     try {
       const { emailIds } = request;
-      
+
       // Validar IDs
       const validIds = emailIds.filter(id => Types.ObjectId.isValid(id));
-      
+
       if (validIds.length === 0) {
         throw new AppError('No valid email IDs provided', 400);
       }
 
       const result = await EmailInboxModel.updateMany(
-        { 
+        {
           _id: { $in: validIds.map(id => new Types.ObjectId(id)) },
           isRead: false
         },
-        { 
+        {
           $set: { isRead: true }
         }
       );
 
       logger.info(`Marked ${result.modifiedCount} emails as read`);
-      
+
       return { modifiedCount: result.modifiedCount };
     } catch (error: any) {
       logger.error('Error marking emails as read:', error);
@@ -212,26 +212,26 @@ export class EmailInboxService {
   static async markAsUnread(request: MarkAsReadRequest): Promise<{ modifiedCount: number }> {
     try {
       const { emailIds } = request;
-      
+
       // Validar IDs
       const validIds = emailIds.filter(id => Types.ObjectId.isValid(id));
-      
+
       if (validIds.length === 0) {
         throw new AppError('No valid email IDs provided', 400);
       }
 
       const result = await EmailInboxModel.updateMany(
-        { 
+        {
           _id: { $in: validIds.map(id => new Types.ObjectId(id)) },
           isRead: true
         },
-        { 
+        {
           $set: { isRead: false }
         }
       );
 
       logger.info(`Marked ${result.modifiedCount} emails as unread`);
-      
+
       return { modifiedCount: result.modifiedCount };
     } catch (error: any) {
       logger.error('Error marking emails as unread:', error);
@@ -246,7 +246,7 @@ export class EmailInboxService {
     try {
       // Validar IDs
       const validIds = emailIds.filter(id => Types.ObjectId.isValid(id));
-      
+
       if (validIds.length === 0) {
         throw new AppError('No valid email IDs provided', 400);
       }
@@ -256,7 +256,7 @@ export class EmailInboxService {
       });
 
       logger.info(`Deleted ${result.deletedCount} emails`);
-      
+
       return { deletedCount: result.deletedCount };
     } catch (error: any) {
       logger.error('Error deleting emails:', error);

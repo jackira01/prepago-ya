@@ -450,8 +450,8 @@ const AdminProfileVerificationCarousel: React.FC<
                     <h3 className="text-lg font-semibold">Redes Sociales</h3>
 
                     {(() => {
-                      // Obtener los datos de socialMedia de la verificación
-                      const socialMedia = verificationData?.data?.steps?.socialMedia as any;
+                      // Obtener los datos de socialMedia del modelo de perfil
+                      const socialMedia = profileData.data?.socialMedia as any;
 
                       return socialMedia && (
                         socialMedia.instagram ||

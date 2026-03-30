@@ -9,7 +9,7 @@ import {
 import { createProfileSlug } from '@/utils/slug';
 import {
   Calendar,
-  CheckCircle,
+  Camera,
   MapPin,
   Star,
   Tag,
@@ -59,9 +59,10 @@ export function ProfileCard({ profile, viewMode, variant = 'default' }: ProfileC
 
             {/* Badges siempre visibles */}
             <div className="absolute top-3 right-3 flex flex-col items-end space-y-2 z-10">
-              {profile.verification?.isVerified && (
-                <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100">
-                  <CheckCircle className="h-3 w-3" />
+              {profile.verification?.steps?.selfieVerification?.isVerified && (
+                <Badge className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 flex items-center gap-1">
+                  <Camera className="h-3 w-3" />
+                  <span className="text-xs">Fotos verificadas</span>
                 </Badge>
               )}
               {category && (
@@ -77,15 +78,10 @@ export function ProfileCard({ profile, viewMode, variant = 'default' }: ProfileC
                 <h3 className="font-semibold text-base text-white mb-1">
                   {profile.name}
                 </h3>
-                {profile.location?.city && (
+                {profile.location && (
                   <p className="text-sm text-white/90 flex items-center">
                     <MapPin className="h-3 w-3 mr-1" />
-                    {typeof profile.location.city === 'object' && profile.location.city !== null && 'label' in profile.location.city
-                      ? (profile.location.city as LocationValue).label
-                      : typeof profile.location.city === 'object' && profile.location.city !== null
-                        ? JSON.stringify(profile.location.city)
-                        : profile.location.city || 'Ciudad no especificada'
-                    }
+                    {formatLocation(profile.location) || 'Ciudad no especificada'}
                   </p>
                 )}
                 {profile.description && (
@@ -135,12 +131,13 @@ export function ProfileCard({ profile, viewMode, variant = 'default' }: ProfileC
 
             {/* Badges siempre visibles - Movidos debajo del banner */}
             <div className="absolute top-8 right-1 sm:top-9 lg:top-10 sm:right-2 lg:right-3 flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-1 lg:space-x-2 z-10">
-              {profile.verification?.isVerified && (
+              {profile.verification?.steps?.selfieVerification?.isVerified && (
                 <Badge
                   variant="secondary"
-                  className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 p-1"
+                  className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 flex items-center gap-1 px-1.5 py-0.5"
                 >
-                  <CheckCircle className="h-2 w-2 lg:h-3 lg:w-3" />
+                  <Camera className="h-2 w-2 lg:h-3 lg:w-3 flex-shrink-0" />
+                  <span className="text-[9px] lg:text-xs hidden sm:inline">Fotos verificadas</span>
                 </Badge>
               )}
               {profile.online && (
@@ -236,7 +233,7 @@ export function ProfileCard({ profile, viewMode, variant = 'default' }: ProfileC
                 )}
 
                 {/* Barra de verificación */}
-                {profile.verification?.isVerified && (
+                {profile.verification?.steps?.selfieVerification?.isVerified && (
                   <div className="mt-2">
                     <VerificationBar
                       verification={profile.verification}

@@ -80,7 +80,7 @@ export default function ProfileDetailLayout({ id }: { id: string }) {
       if (v && typeof v === 'object' && 'label' in v) return (v as any).label;
       return v || 'SCORT';
     })(),
-    verified: profile.verification?.verificationStatus === 'check',
+    verified: verification?.data?.steps?.selfieVerification?.isVerified || false,
     description: profile.description,
     images: profile.media?.gallery || ['/placeholder.svg?height=400&width=600'],
     videos: (() => {

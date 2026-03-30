@@ -3,13 +3,14 @@
 import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Video, FileCheck, Shield } from 'lucide-react';
+import { Camera, CheckCircle, Video, FileCheck, Banknote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface HorizontalFilterBarFilters {
   identityVerified?: boolean;
   hasVideo?: boolean;
   documentVerified?: boolean;
+  noDeposito?: boolean;
 }
 
 interface HorizontalFilterBarProps {
@@ -55,9 +56,9 @@ const HorizontalFilterBar = ({
   const filterButtons = [
     {
       key: 'identityVerified' as const,
-      label: 'Identidad verificada',
-      icon: Shield,
-      description: 'Perfiles con verificación de identidad por video',
+      label: 'Fotos verificadas',
+      icon: Camera,
+      description: 'Perfiles con fotos de identidad verificadas',
       isActive: activeFilters.identityVerified,
     },
     {
@@ -73,6 +74,13 @@ const HorizontalFilterBar = ({
       icon: FileCheck,
       description: 'Perfiles con documentos verificados',
       isActive: activeFilters.documentVerified,
+    },
+    {
+      key: 'noDeposito' as const,
+      label: 'No pide anticipo',
+      icon: Banknote,
+      description: 'Perfiles que no piden anticipo',
+      isActive: activeFilters.noDeposito,
     },
   ];
 
@@ -122,7 +130,8 @@ const HorizontalFilterBar = ({
                       "bg-gradient-to-r shadow-lg",
                       filter.key === 'identityVerified' && "from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800",
                       filter.key === 'hasVideo' && "from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800",
-                      filter.key === 'documentVerified' && "from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
+                      filter.key === 'documentVerified' && "from-green-600 to-green-700 hover:from-green-700 hover:to-green-800",
+                      filter.key === 'noDeposito' && "from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800"
                     ],
                     !filter.isActive && [
                       "border-border/50 hover:border-border text-muted-foreground hover:text-foreground",
@@ -157,7 +166,7 @@ const HorizontalFilterBar = ({
               <div className="flex flex-wrap gap-1">
                 {activeFilters.identityVerified && (
                   <Badge variant="outline" className="text-xs">
-                    Identidad verificada
+                    Fotos verificadas
                   </Badge>
                 )}
                 {activeFilters.hasVideo && (
@@ -168,6 +177,11 @@ const HorizontalFilterBar = ({
                 {activeFilters.documentVerified && (
                   <Badge variant="outline" className="text-xs">
                     Documento verificado
+                  </Badge>
+                )}
+                {activeFilters.noDeposito && (
+                  <Badge variant="outline" className="text-xs">
+                    No pide anticipo
                   </Badge>
                 )}
               </div>

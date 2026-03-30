@@ -192,6 +192,9 @@ export default function SearchPageClient({
     if (filters.verification?.documentVerified !== undefined) {
       normalized.documentVerified = filters.verification.documentVerified;
     }
+    if (filters.verification?.noDeposito) {
+      (normalized as any).noDeposito = filters.verification.noDeposito;
+    }
 
     return normalized;
   };
@@ -209,6 +212,7 @@ export default function SearchPageClient({
     filters.verification?.identityVerified,
     filters.verification?.hasVideo,
     filters.verification?.documentVerified,
+    filters.verification?.noDeposito,
     filters.page,  // CRÍTICO: Agregar page
     filters.limit, // CRÍTICO: Agregar limit
     filters.sortBy,
@@ -251,7 +255,8 @@ export default function SearchPageClient({
     filters.features?.sex ||
     filters.verification?.identityVerified ||
     filters.verification?.hasVideo ||
-    filters.verification?.documentVerified
+    filters.verification?.documentVerified ||
+    filters.verification?.noDeposito
   );
 
   // Detectar si los filtros de ubicación/categoría son diferentes a la URL actual

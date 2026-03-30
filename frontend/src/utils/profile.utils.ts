@@ -76,15 +76,22 @@ export const transformProfilesToCards = (
  * Formatea la ubicación para mostrar en las cards
  */
 export const formatLocation = (location: {
-  department: { value: string; label: string } | string;
-  city: { value: string; label: string } | string;
-}): string => {
+  department?: { value: string; label: string } | string | null;
+  city?: { value: string; label: string } | string | null;
+} | null | undefined): string => {
   if (!location) return '';
-  const departmentLabel = typeof location.department === 'object' && location.department ? location.department.label : location.department;
-  const cityLabel = typeof location.city === 'object' && location.city ? location.city.label : location.city;
+  const departmentLabel = typeof location.department === 'object' && location.department ? location.department.label : (location.department as string | null | undefined);
+  const cityLabel = typeof location.city === 'object' && location.city ? location.city.label : (location.city as string | null | undefined);
 
   if (!cityLabel && !departmentLabel) return '';
-  return `${cityLabel || ''}, ${departmentLabel || ''}`;
+
+  // Para Bogotá mostrar: departamento, ciudad
+  if (departmentLabel && departmentLabel.toLowerCase().includes('bogot')) {
+    return cityLabel ? `${departmentLabel}, ${cityLabel}` : departmentLabel;
+  }
+
+  // Para otros departamentos: solo la ciudad
+  return cityLabel || departmentLabel || '';
 };
 
 /**

@@ -1,13 +1,13 @@
-import { Request, Response, NextFunction } from 'express';
-import { EmailInboxService } from './email-inbox.service';
+import { NextFunction, Request, Response } from 'express';
+import { AuthRequest } from '../../types/auth.types';
+import {
+  InboxEmailQuery,
+  IncomingEmailData,
+  MarkAsReadRequest
+} from '../../types/email-inbox.types';
 import { AppError } from '../../utils/AppError';
 import { logger } from '../../utils/logger';
-import { AuthRequest } from '../../types/auth.types';
-import { 
-  InboxEmailQuery, 
-  MarkAsReadRequest, 
-  IncomingEmailData 
-} from '../../types/email-inbox.types';
+import { EmailInboxService } from './email-inbox.service';
 
 export class EmailInboxController {
   /**
@@ -27,7 +27,7 @@ export class EmailInboxController {
       };
 
       const result = await EmailInboxService.getInboxEmails(query);
-      
+
       res.status(200).json({
         success: true,
         data: result
@@ -44,14 +44,14 @@ export class EmailInboxController {
    */
   static async getEmailById(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
-      
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
       const email = await EmailInboxService.getEmailById(id);
-      
+
       if (!email) {
         throw new AppError('Email not found', 404);
       }
-      
+
       res.status(200).json({
         success: true,
         data: email
@@ -69,13 +69,13 @@ export class EmailInboxController {
   static async markAsRead(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const request: MarkAsReadRequest = req.body;
-      
+
       if (!request.emailIds || !Array.isArray(request.emailIds) || request.emailIds.length === 0) {
         throw new AppError('emailIds array is required and must not be empty', 400);
       }
-      
+
       const result = await EmailInboxService.markAsRead(request);
-      
+
       res.status(200).json({
         success: true,
         message: `${result.modifiedCount} emails marked as read`,
@@ -94,13 +94,13 @@ export class EmailInboxController {
   static async markAsUnread(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const request: MarkAsReadRequest = req.body;
-      
+
       if (!request.emailIds || !Array.isArray(request.emailIds) || request.emailIds.length === 0) {
         throw new AppError('emailIds array is required and must not be empty', 400);
       }
-      
+
       const result = await EmailInboxService.markAsUnread(request);
-      
+
       res.status(200).json({
         success: true,
         message: `${result.modifiedCount} emails marked as unread`,
@@ -119,13 +119,13 @@ export class EmailInboxController {
   static async deleteEmails(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { emailIds } = req.body;
-      
+
       if (!emailIds || !Array.isArray(emailIds) || emailIds.length === 0) {
         throw new AppError('emailIds array is required and must not be empty', 400);
       }
-      
+
       const result = await EmailInboxService.deleteEmails(emailIds);
-      
+
       res.status(200).json({
         success: true,
         message: `${result.deletedCount} emails deleted`,
@@ -144,7 +144,7 @@ export class EmailInboxController {
   static async getInboxStats(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const stats = await EmailInboxService.getInboxStats();
-      
+
       res.status(200).json({
         success: true,
         data: stats
@@ -162,7 +162,7 @@ export class EmailInboxController {
   static async receiveEmailWebhook(req: Request, res: Response, next: NextFunction) {
     try {
       const webhookData = req.body;
-      
+
       // Validar que sea un evento de correo recibido
       if (!webhookData || !webhookData.email) {
         throw new AppError('Invalid webhook payload', 400);
@@ -187,9 +187,9 @@ export class EmailInboxController {
       };
 
       const savedEmail = await EmailInboxService.storeIncomingEmail(emailData);
-      
+
       logger.info(`Received email via webhook: ${savedEmail._id}`);
-      
+
       res.status(200).json({
         success: true,
         message: 'Email received and stored successfully',
@@ -228,7 +228,7 @@ export class EmailInboxController {
       };
 
       const savedEmail = await EmailInboxService.storeIncomingEmail(testEmailData);
-      
+
       res.status(201).json({
         success: true,
         message: 'Test email created successfully',

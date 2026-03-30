@@ -1,31 +1,18 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/server.js",
   "scripts": {
-    "build": "tsc",
-    "build:prod": "pnpm run clean && tsc",
-    "build:render": "pnpm install && pnpm run build:prod",
-    "start": "node ./dist/server.js",
-    "start:prod": "node ./dist/server.js",
-    "start:render": "node ./dist/server.js",
-    "start:dev": "ts-node ./src/server.ts",
-    "dev": "nodemon --exec ts-node ./src/server.ts",
-    "clean": "rimraf dist",
-    "migrate:config-parameters": "ts-node ./scripts/migrate-config-parameters.ts",
-    "migrate:plan-to-planassignment": "ts-node ./scripts/migrate-plan-to-planassignment.ts",
-    "migrate:revert-planassignment": "ts-node ./scripts/migrate-plan-to-planassignment.ts revert",
-    "seed:plans": "set FEATURE_VISIBILITY_ENGINE=true && ts-node ./src/modules/plans/plans.seed.ts",
-    "init:default-plan": "ts-node ./scripts/create-default-plan-config.ts",
-    "init:profile-limits": "ts-node ./scripts/create-profile-limits-config.ts",
-    "init:agency-limits": "ts-node ./src/scripts/create-agency-profile-limits-config.ts"
+    "build": "bun build ./src/server.ts --outdir ./dist --target bun",
+    "build:prod": "rm -rf dist && bun build ./src/server.ts --outdir ./dist --target bun",
+    "start": "bun dist/server.js",
+    "start:prod": "NODE_ENV=production bun dist/server.js",
+    "dev": "bun --watch src/server.ts",
+    "migrate:config-parameters": "bun scripts/migrate-config-parameters.ts",
+    "seed:plans": "FEATURE_VISIBILITY_ENGINE=true bun src/modules/plans/plans.seed.ts",
+    "clean": "rm -rf dist"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
-    "@types/cors": "^2.8.19",
     "bcryptjs": "^3.0.2",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
@@ -53,10 +40,6 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.10",
     "@types/node-cron": "^3.0.11",
-    "cross-env": "^10.1.0",
-    "nodemon": "^3.1.10",
-    "rimraf": "^6.0.1",
-    "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }
 }

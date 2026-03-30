@@ -2,18 +2,24 @@
   "name": "prepago-ya",
   "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "backend",
+    "frontend"
+  ],
   "scripts": {
-    "build": "pnpm build:backend && pnpm build:frontend",
-    "build:backend": "pnpm --filter backend build:prod",
-    "build:frontend": "pnpm --filter frontend build",
-    "start": "pnpm start:backend",
-    "start:backend": "pnpm --filter backend start:prod",
-    "start:frontend": "pnpm --filter frontend start",
-    "dev": "concurrently \"pnpm dev:backend\" \"pnpm dev:frontend\"",
-    "dev:backend": "pnpm --filter backend dev",
-    "dev:frontend": "pnpm --filter frontend dev",
-    "install:all": "pnpm install",
-    "clean": "pnpm --filter backend clean && rm -rf frontend/.next",
+    "build": "bun run build:backend && bun run build:frontend",
+    "build:backend": "bun run --filter backend build:prod",
+    "build:frontend": "bun run --filter frontend build",
+    "start": "bun run start:backend",
+    "start:backend": "bun run --filter backend start:prod",
+    "start:frontend": "bun run --filter frontend start",
+    "dev": "concurrently \"bun run dev:backend\" \"bun run dev:frontend\"",
+    "dev:backend": "bun run --filter backend dev",
+    "dev:frontend": "bun run --filter frontend dev",
+    "install:all": "bun install",
+    "clean": "bun run --filter backend clean && rm -rf frontend/.next",
     "lint": "biome check .",
     "lint:fix": "biome check --write ."
   },
@@ -21,5 +27,5 @@
     "@biomejs/biome": "2.0.6",
     "concurrently": "^9.1.0"
   },
-  "packageManager": "pnpm@10.13.1+sha512.37ebf1a5c7a30d5fabe0c5df44ee8da4c965ca0c5af3dbab28c3a1681b70a256218d05c81c9c0dcf767ef6b8551eb5b960042b9ed4300c59242336377e01cfad"
+  "packageManager": "bun@1.2.0"
 }

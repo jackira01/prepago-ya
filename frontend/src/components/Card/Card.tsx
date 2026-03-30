@@ -2,8 +2,9 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { VerificationBar } from '@/components/VerificationBar/VerificationBar';
 import type { ProfileCardData } from '@/types/profile.types';
+import { formatLocation } from '@/utils/profile.utils';
 import { createProfileSlug } from '@/utils/slug';
-import { Calendar, CheckCircle, MapPin, Star, Tag } from 'lucide-react';
+import { Calendar, Camera, MapPin, Star, Tag } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -57,9 +58,10 @@ const CardComponent = ({ profiles = [] }: CardComponentProps) => {
 
                 {/* Badges siempre visibles - Movidos debajo del banner */}
                 <div className="absolute top-8 right-2 sm:top-9 sm:right-3 flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-2 z-10">
-                  {profile.verification?.isVerified && (
-                    <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 hover:scale-110 transition-transform duration-200 text-xs">
-                      <CheckCircle className="h-2 w-2 sm:h-3 sm:w-3" />
+                  {profile.verification?.steps?.selfieVerification?.isVerified && (
+                    <Badge className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 hover:scale-110 transition-transform duration-200 flex items-center gap-1 px-1.5 py-0.5">
+                      <Camera className="h-2 w-2 sm:h-3 sm:w-3 flex-shrink-0" />
+                      <span className="text-[9px] sm:text-xs hidden sm:inline">Fotos verificadas</span>
                     </Badge>
                   )}
                   {profile.online && (
@@ -89,13 +91,7 @@ const CardComponent = ({ profiles = [] }: CardComponentProps) => {
                       <span className="flex items-center">
                         <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
                         <span className="line-clamp-1">
-                          {(typeof profile.location?.city === 'object'
-                            ? profile.location.city.label
-                            : profile.location?.city) ||
-                            (typeof profile.location?.department === 'object'
-                              ? profile.location.department.label
-                              : profile.location?.department) ||
-                            'N/A'}
+                          {formatLocation(profile.location) || 'N/A'}
                         </span>
                       </span>
                     </div>
@@ -139,9 +135,7 @@ const CardComponent = ({ profiles = [] }: CardComponentProps) => {
                     <span className="flex items-center hover:text-foreground transition-colors duration-200">
                       <MapPin className="h-2 w-2 mr-1" />
                       <span className="line-clamp-1">
-                        {(typeof profile.location?.city === 'object' ? profile.location.city.label : profile.location?.city) ||
-                          (typeof profile.location?.department === 'object' ? profile.location.department.label : profile.location?.department) ||
-                          'Ubicación no disponible'}
+                        {formatLocation(profile.location) || 'Ubicación no disponible'}
                       </span>
                     </span>
                   </div>

@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useState } from 'react';
 import type { FilterQuery } from '@/types/profile.types';
+import { useCallback, useState } from 'react';
 
 export interface SearchFilters {
   // Filtros básicos
@@ -49,6 +49,7 @@ export interface SearchFilters {
     identityVerified?: boolean;
     hasVideo?: boolean;
     documentVerified?: boolean;
+    noDeposito?: boolean;
   };
 
   // Estados

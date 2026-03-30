@@ -450,8 +450,8 @@ const AdminProfileVerificationCarousel: React.FC<
                     <h3 className="text-lg font-semibold">Redes Sociales</h3>
 
                     {(() => {
-                      // Obtener los datos de socialMedia de la verificación
-                      const socialMedia = verificationData?.data?.steps?.socialMedia as any;
+                      // Obtener los datos de socialMedia del modelo de perfil
+                      const socialMedia = profileData.data?.socialMedia as any;
 
                       return socialMedia && (
                         socialMedia.instagram ||
@@ -659,96 +659,96 @@ const AdminProfileVerificationCarousel: React.FC<
                       </div>
                     );
                   })() :
-                  currentStep.key === 'contactConsistency' ? (() => {
-                    const consistencyData = verificationData?.data?.steps?.contactConsistency as any;
-                    const debug = consistencyData?.debug;
-                    const hasChanged = debug?.hasChanged;
-                    const lastChangeDate = debug?.lastChangeDate ? new Date(debug.lastChangeDate) : null;
-                    const now = new Date();
-                    const MONTHS_REQUIRED = 3;
+                    currentStep.key === 'contactConsistency' ? (() => {
+                      const consistencyData = verificationData?.data?.steps?.contactConsistency as any;
+                      const debug = consistencyData?.debug;
+                      const hasChanged = debug?.hasChanged;
+                      const lastChangeDate = debug?.lastChangeDate ? new Date(debug.lastChangeDate) : null;
+                      const now = new Date();
+                      const MONTHS_REQUIRED = 3;
 
-                    const diffMonths = lastChangeDate
-                      ? (now.getFullYear() - lastChangeDate.getFullYear()) * 12 + (now.getMonth() - lastChangeDate.getMonth())
-                      : 0;
-                    const monthsRemaining = Math.max(0, MONTHS_REQUIRED - diffMonths);
-
-                    return (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 gap-3">
-                          <div className="flex justify-between items-center p-3 bg-muted/40 rounded-lg">
-                            <span className="text-sm font-medium">Tiene número de contacto</span>
-                            <span className="text-sm text-muted-foreground">
-                              {debug?.hasContactNumber ? 'Sí' : 'No'}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center p-3 bg-muted/40 rounded-lg">
-                            <span className="text-sm font-medium">¿Ha cambiado el contacto?</span>
-                            <span className="text-sm text-muted-foreground">
-                              {hasChanged === undefined ? 'Nunca ha cambiado' : hasChanged ? 'Sí' : 'No'}
-                            </span>
-                          </div>
-                          {hasChanged && lastChangeDate && (
-                            <div className="flex justify-between items-center p-3 bg-muted/40 rounded-lg">
-                              <span className="text-sm font-medium">Último cambio</span>
-                              <span className="text-sm text-muted-foreground">
-                                {lastChangeDate.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}
-                              </span>
-                            </div>
-                          )}
-                          <div className={`flex justify-between items-center p-3 rounded-lg ${consistencyData?.isVerified ? 'bg-green-50 dark:bg-green-900/20' : 'bg-yellow-50 dark:bg-yellow-900/20'}`}>
-                            <span className="text-sm font-medium">Estado</span>
-                            <span className={`text-sm font-medium ${consistencyData?.isVerified ? 'text-green-700 dark:text-green-400' : 'text-yellow-700 dark:text-yellow-400'}`}>
-                              {consistencyData?.isVerified
-                                ? '✅ Verificado automáticamente'
-                                : hasChanged
-                                  ? `⏳ Faltan ${monthsRemaining} mes${monthsRemaining !== 1 ? 'es' : ''} sin cambios`
-                                  : '⏳ Pendiente'}
-                            </span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground">Este dato es calculado automáticamente por el sistema y no requiere verificación manual.</p>
-                      </div>
-                    );
-                  })() :
-                  currentStep.key === 'deposito' ? (() => {
-                    // Leer deposito desde el perfil (fuente de verdad) o verificación como fallback
-                    const asksForDeposit = profileData.data?.deposito ?? (verificationData?.data?.steps as any)?.deposito;
-                    const isUndefined = asksForDeposit === undefined || asksForDeposit === null;
-                    return (
-                      <div className="mt-4">
-                        {isUndefined ? (
-                          <div className="text-center p-4 border rounded-lg bg-muted/40">
-                            <p className="text-sm text-muted-foreground">No se ha definido información de depósito para este perfil.</p>
-                          </div>
-                        ) : (
-                          <div className={`text-center p-4 border rounded-lg ${!asksForDeposit ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'}`}>
-                            <p className={`text-lg font-medium ${!asksForDeposit ? 'text-green-800 dark:text-green-300' : 'text-yellow-800 dark:text-yellow-300'}`}>
-                              {!asksForDeposit ? '✅ No solicita depósito por adelantado' : '⚠️ Solicita depósito por adelantado'}
-                            </p>
-                            <p className="text-sm text-muted-foreground mt-2">
-                              {!asksForDeposit ? 'Este perfil gana puntos de confianza.' : 'Este perfil no gana puntos extra por este factor.'}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })() :
-                  (<div className="border rounded-lg p-4">
-                    {(() => {
-                      // Obtener los datos del paso actual desde el objeto steps
-                      const stepData = verificationData?.data?.steps?.[currentStep.key as keyof typeof verificationData.data.steps];
+                      const diffMonths = lastChangeDate
+                        ? (now.getFullYear() - lastChangeDate.getFullYear()) * 12 + (now.getMonth() - lastChangeDate.getMonth())
+                        : 0;
+                      const monthsRemaining = Math.max(0, MONTHS_REQUIRED - diffMonths);
 
                       return (
-                        <VerificationStepRenderer
-                          step={currentStep}
-                          stepData={stepData}
-                          onPreviewImage={setPreviewImage}
-                          getCurrentVideoLink={(stepKey) => getCurrentVideoLink(stepKey as any, verificationData)}
-                          handleVideoLinkChange={(stepKey, link) => handleVideoLinkChange(stepKey as any, link)}
-                        />
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 gap-3">
+                            <div className="flex justify-between items-center p-3 bg-muted/40 rounded-lg">
+                              <span className="text-sm font-medium">Tiene número de contacto</span>
+                              <span className="text-sm text-muted-foreground">
+                                {debug?.hasContactNumber ? 'Sí' : 'No'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center p-3 bg-muted/40 rounded-lg">
+                              <span className="text-sm font-medium">¿Ha cambiado el contacto?</span>
+                              <span className="text-sm text-muted-foreground">
+                                {hasChanged === undefined ? 'Nunca ha cambiado' : hasChanged ? 'Sí' : 'No'}
+                              </span>
+                            </div>
+                            {hasChanged && lastChangeDate && (
+                              <div className="flex justify-between items-center p-3 bg-muted/40 rounded-lg">
+                                <span className="text-sm font-medium">Último cambio</span>
+                                <span className="text-sm text-muted-foreground">
+                                  {lastChangeDate.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                </span>
+                              </div>
+                            )}
+                            <div className={`flex justify-between items-center p-3 rounded-lg ${consistencyData?.isVerified ? 'bg-green-50 dark:bg-green-900/20' : 'bg-yellow-50 dark:bg-yellow-900/20'}`}>
+                              <span className="text-sm font-medium">Estado</span>
+                              <span className={`text-sm font-medium ${consistencyData?.isVerified ? 'text-green-700 dark:text-green-400' : 'text-yellow-700 dark:text-yellow-400'}`}>
+                                {consistencyData?.isVerified
+                                  ? '✅ Verificado automáticamente'
+                                  : hasChanged
+                                    ? `⏳ Faltan ${monthsRemaining} mes${monthsRemaining !== 1 ? 'es' : ''} sin cambios`
+                                    : '⏳ Pendiente'}
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground">Este dato es calculado automáticamente por el sistema y no requiere verificación manual.</p>
+                        </div>
                       );
-                    })()}
-                  </div>)}
+                    })() :
+                      currentStep.key === 'deposito' ? (() => {
+                        // Leer deposito desde el perfil (fuente de verdad) o verificación como fallback
+                        const asksForDeposit = profileData.data?.deposito ?? (verificationData?.data?.steps as any)?.deposito;
+                        const isUndefined = asksForDeposit === undefined || asksForDeposit === null;
+                        return (
+                          <div className="mt-4">
+                            {isUndefined ? (
+                              <div className="text-center p-4 border rounded-lg bg-muted/40">
+                                <p className="text-sm text-muted-foreground">No se ha definido información de depósito para este perfil.</p>
+                              </div>
+                            ) : (
+                              <div className={`text-center p-4 border rounded-lg ${!asksForDeposit ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'}`}>
+                                <p className={`text-lg font-medium ${!asksForDeposit ? 'text-green-800 dark:text-green-300' : 'text-yellow-800 dark:text-yellow-300'}`}>
+                                  {!asksForDeposit ? '✅ No solicita depósito por adelantado' : '⚠️ Solicita depósito por adelantado'}
+                                </p>
+                                <p className="text-sm text-muted-foreground mt-2">
+                                  {!asksForDeposit ? 'Este perfil gana puntos de confianza.' : 'Este perfil no gana puntos extra por este factor.'}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })() :
+                        (<div className="border rounded-lg p-4">
+                          {(() => {
+                            // Obtener los datos del paso actual desde el objeto steps
+                            const stepData = verificationData?.data?.steps?.[currentStep.key as keyof typeof verificationData.data.steps];
+
+                            return (
+                              <VerificationStepRenderer
+                                step={currentStep}
+                                stepData={stepData}
+                                onPreviewImage={setPreviewImage}
+                                getCurrentVideoLink={(stepKey) => getCurrentVideoLink(stepKey as any, verificationData)}
+                                handleVideoLinkChange={(stepKey, link) => handleVideoLinkChange(stepKey as any, link)}
+                              />
+                            );
+                          })()}
+                        </div>)}
               </CardContent>
             </Card>
 

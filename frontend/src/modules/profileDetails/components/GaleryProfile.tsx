@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { ImageModal } from '@/components/ui/image-modal';
-import { CheckCircle, ChevronRight, Search } from 'lucide-react';
+import { Camera, ChevronRight, Search } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 
@@ -114,9 +114,9 @@ export const ProfileGallery = ({
         </div>
 
         {verified && (
-          <Badge className="absolute top-4 left-4 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 z-10">
-            <CheckCircle className="h-3 w-3 mr-1" />
-            Verificado
+          <Badge className="absolute top-4 left-4 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 z-10">
+            <Camera className="h-3 w-3 mr-1" />
+            Fotos verificadas
           </Badge>
         )}
       </div>

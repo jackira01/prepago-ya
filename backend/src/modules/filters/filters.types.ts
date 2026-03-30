@@ -23,6 +23,7 @@ export interface FilterQuery {
   isVerified?: boolean;
   profileVerified?: boolean;
   documentVerified?: boolean;
+  noDeposito?: boolean;
   hasDestacadoUpgrade?: boolean;
   hasVideos?: boolean;
   page?: number;

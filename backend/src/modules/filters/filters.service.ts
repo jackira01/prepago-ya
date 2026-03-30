@@ -27,6 +27,7 @@ export const getFilteredProfiles = async (
       isVerified,
       profileVerified,
       documentVerified,
+      noDeposito,
       hasDestacadoUpgrade,
       hasVideos,
       page = 1,
@@ -129,9 +130,9 @@ export const getFilteredProfiles = async (
     //   query['user.isVerified'] = isVerified;
     // }
 
-    // Filtro por verificación de perfil (basado en videoVerification)
+    // Filtro por verificación de selfie (Fotos verificadas)
     if (profileVerified !== undefined) {
-      // Buscar perfiles que tengan verificación de video completada
+      // Buscar perfiles que tengan selfieVerification completada
       const profileVerificationQuery = await Profile.aggregate([
         {
           $lookup: {
@@ -143,7 +144,7 @@ export const getFilteredProfiles = async (
         },
         {
           $match: {
-            'verificationData.steps.videoVerification.isVerified': profileVerified
+            'verificationData.steps.selfieVerification.isVerified': profileVerified
           }
         },
         {
@@ -156,10 +157,10 @@ export const getFilteredProfiles = async (
       const verifiedProfileIds = profileVerificationQuery.map(p => p._id);
 
       if (profileVerified) {
-        // Solo incluir perfiles con video verificado
+        // Solo incluir perfiles con selfie verificado
         query._id = { $in: verifiedProfileIds };
       } else {
-        // Excluir perfiles con video verificado
+        // Excluir perfiles con selfie verificado
         query._id = { $nin: verifiedProfileIds };
       }
     }
@@ -242,6 +243,40 @@ export const getFilteredProfiles = async (
     // Filtro por videos
     if (hasVideos !== undefined && hasVideos) {
       query['media.videos'] = { $exists: true, $not: { $size: 0 } };
+    }
+
+    // Filtro por "No pide anticipo" (deposito === false en profileVerification)
+    if (noDeposito === true) {
+      const noDepositoQuery = await Profile.aggregate([
+        {
+          $lookup: {
+            from: 'profileverifications',
+            localField: 'verification',
+            foreignField: '_id',
+            as: 'verificationData'
+          }
+        },
+        {
+          $match: {
+            'verificationData.steps.deposito': false
+          }
+        },
+        {
+          $project: {
+            _id: 1
+          }
+        }
+      ]);
+
+      const noDepositoIds = noDepositoQuery.map(p => p._id);
+
+      if (query._id && query._id.$in) {
+        query._id = { $in: query._id.$in.filter((id: any) => noDepositoIds.some((nid: any) => nid.equals(id))) };
+      } else if (query._id && query._id.$nin) {
+        query._id = { $in: noDepositoIds, $nin: query._id.$nin };
+      } else {
+        query._id = { $in: noDepositoIds };
+      }
     }
 
     // Filtro por características (features)
@@ -432,139 +467,122 @@ export const getFilteredProfiles = async (
       'hasVideo'
     ];
 
-    const finalFields = Array.isArray(fields) && fields.length > 0
-      ? Array.from(new Set([...fields, ...requiredFields]))
-      : Array.from(new Set([...profileCardFields, ...requiredFields]));
-
-    const selectFields = finalFields.join(' ');
-
     const startTime = Date.now();
 
-    // Usar agregación para obtener todos los perfiles con información de usuario
+    // ── Pipeline optimizado: solo se transfieren los campos necesarios en cada etapa ──
     const aggregationPipeline: any[] = [
-      {
-        $match: query
-      },
+      { $match: query },
+
+      // 1. User lookup limitado a _id e isVerified (evita traer todo el documento)
       {
         $lookup: {
           from: 'users',
-          localField: 'user',
-          foreignField: '_id',
+          let: { userId: '$user' },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$_id', '$$userId'] } } },
+            { $project: { _id: 1, isVerified: 1 } }
+          ],
           as: 'userInfo'
         }
       },
       {
         $addFields: {
-          user: { $arrayElemAt: ['$userInfo', 0] }
+          _userIsVerified: { $arrayElemAt: ['$userInfo.isVerified', 0] }
         }
       },
+      { $project: { userInfo: 0 } },
+
+      // ✨ SEGURIDAD: solo perfiles de usuarios verificados
+      { $match: { _userIsVerified: true } },
+
+      // 2. Proyección temprana del perfil: reduce el tamaño del documento antes de los lookups pesados
       {
         $project: {
-          userInfo: 0
+          _id: 1,
+          name: 1,
+          age: 1,
+          location: 1,
+          description: 1,
+          // Solo la primera imagen de galería (la tarjeta no necesita más)
+          'media.gallery': { $slice: ['$media.gallery', 1] },
+          online: 1,
+          hasVideo: 1,
+          verification: 1,
+          planAssignment: 1,
+          upgrades: 1,
+          lastShownAt: 1,
+          createdAt: 1,
+          features: 1,
         }
       },
-      // ✨ VALIDACIÓN DE SEGURIDAD: Solo mostrar perfiles de usuarios verificados
-      // Esto es crítico para asegurar que los perfiles visibles sean legítimos
+
+      // 3. Verification lookup: solo campos usados en el frontend y en el motor de visibilidad
       {
-        $match: {
-          'user.isVerified': true
-        }
-      }
-
-    ];
-
-    // Agregar lookup para verification si es necesario
-    if (!fields || fields.includes('verification')) {
-      aggregationPipeline.push({
         $lookup: {
           from: 'profileverifications',
-          localField: 'verification',
-          foreignField: '_id',
+          let: { verificationId: '$verification' },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$_id', '$$verificationId'] } } },
+            {
+              $project: {
+                _id: 1,
+                verificationProgress: 1,
+                verificationStatus: 1,
+                'steps.selfieVerification.isVerified': 1,
+                'steps.deposito': 1,
+              }
+            }
+          ],
           as: 'verification'
         }
-      });
-      aggregationPipeline.push({
-        $addFields: {
-          verification: { $arrayElemAt: ['$verification', 0] }
+      },
+      { $addFields: { verification: { $arrayElemAt: ['$verification', 0] } } },
+
+      // 4. Plan lookup: solo level y code (necesarios para sortProfiles)
+      {
+        $lookup: {
+          from: 'plandefinitions',
+          let: { planId: '$planAssignment.planId' },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$_id', '$$planId'] } } },
+            { $project: { _id: 1, level: 1, code: 1 } }
+          ],
+          as: 'planAssignmentPlan'
         }
-      });
-    }
+      },
+      { $addFields: { 'planAssignment.planId': { $arrayElemAt: ['$planAssignmentPlan', 0] } } },
+      { $project: { planAssignmentPlan: 0 } },
 
-    // Agregar lookup para planAssignment.planId (NO .plan)
-    aggregationPipeline.push({
-      $lookup: {
-        from: 'plandefinitions',
-        localField: 'planAssignment.planId',
-        foreignField: '_id',
-        as: 'planAssignmentPlan'
-      }
-    });
-    aggregationPipeline.push({
-      $addFields: {
-        'planAssignment.planId': { $arrayElemAt: ['$planAssignmentPlan', 0] }
-      }
-    });
-    aggregationPipeline.push({
-      $project: {
-        planAssignmentPlan: 0
-      }
-    });
-
-    // CRÍTICO: Filtrar solo perfiles con planes que permitan aparecer en filtros
-    // ELIMINADO: Se ha decidido mostrar todos los perfiles válidos independientemente de esta flag
-    // para evitar que perfiles pagados sean ocultados incorrectamente.
-    /*
-    aggregationPipeline.push({
-      $match: {
-        'planAssignment.planId.features.showInFilters': true
-      }
-    });
-    */
-
-    // Agregar lookup para features si es necesario (o si necesitamos extraer categoría)
-    // Siempre hacemos lookup porque 'category' es un campo derivado de features
-    if (finalFields.includes('features') || true) {
-      aggregationPipeline.push({
+      // 5. AttributeGroups lookup: solo campos para extraer categoría
+      {
         $lookup: {
           from: 'attributegroups',
           localField: 'features.group_id',
           foreignField: '_id',
-          as: 'featureGroups'
+          as: 'featureGroups',
+          pipeline: [{ $project: { _id: 1, key: 1, name: 1, label: 1 } }]
         }
-      });
-    }
+      },
+    ];
 
-    // Agregar proyección final para limitar campos devueltos
-    const projectionFields: any = {};
-    finalFields.forEach(field => {
-      projectionFields[field] = 1;
-    });
-
-    // Asegurar que siempre incluimos el campo user para verificaciones
-    projectionFields['user'] = 1;
-
-    // Asegurar que featureGroups esté disponible para el mapeo posterior
-    projectionFields['featureGroups'] = 1;
-
-    aggregationPipeline.push({
-      $project: projectionFields
-    });
-
-    // Ejecutar agregación para obtener perfiles
+    // Ejecutar pipeline de perfiles y conteo en paralelo
+    // El conteo también filtra por usuario verificado para que coincida con el resultado real
     const [allProfiles, totalCountResult] = await Promise.all([
       Profile.aggregate(aggregationPipeline),
       Profile.aggregate([
-        {
-          $match: query
-        },
+        { $match: query },
         {
           $lookup: {
             from: 'users',
-            localField: 'user',
-            foreignField: '_id',
+            let: { userId: '$user' },
+            pipeline: [
+              { $match: { $expr: { $eq: ['$_id', '$$userId'] } } },
+              { $project: { _id: 1, isVerified: 1 } }
+            ],
             as: 'userInfo'
           }
         },
+        { $match: { 'userInfo.isVerified': true } },
         { $count: 'total' }
       ])
     ]);
@@ -608,97 +626,75 @@ export const getFilteredProfiles = async (
       limit,
     };
 
-    // Obtener todos los grupos de atributos para población manual robusta (fallback si el lookup falla)
-    const allAttributeGroups = await AttributeGroup.find().lean();
-
     const profilesWithVerification = paginatedProfiles.map((rawProfile, index) => {
-      // ✅ CORRECCIÓN: No llamamos a enrichProfileVerification. 
-      // Confiamos en que el Cron Job y la DB tienen la información más actualizada.
-      const profile = rawProfile;
+      const profile = rawProfile as any;
 
-      // Calcular estado de verificación basado DIRECTAMENTE en el progreso de la DB
+      // Calcular estado de verificación basado directamente en el progreso de la DB
+      const verification = (typeof profile.verification === 'object' && profile.verification !== null)
+        ? profile.verification
+        : {};
+
+      const progress = (verification as any).verificationProgress || 0;
       let isVerified = false;
       let verificationLevel = 'pending';
 
-      // Aseguramos que verification exista y sea un objeto
-      const verification = (typeof profile.verification === 'object' && profile.verification !== null)
-        ? profile.verification as any
-        : {};
-
-      // Usamos el verificationProgress que viene de la DB (que ya arreglamos con el Cron)
-      const progress = verification.verificationProgress || 0;
-
-      // Determinamos el nivel basado en el porcentaje real almacenado
       if (progress === 100) {
         isVerified = true;
         verificationLevel = 'verified';
       } else if (progress > 0) {
-        // Si tiene algo de progreso pero no 100%
         verificationLevel = 'partial';
       }
 
-      // ---------------------------------------------------------
-      // Lógica de Destacado (Se mantiene igual, estaba correcta)
-      // ---------------------------------------------------------
+      // Lógica de Destacado
       let hasDestacadoUpgrade = false;
-
-      // Verificar si tiene plan DIAMANTE
       if (profile.planAssignment?.planCode === 'DIAMANTE') {
         hasDestacadoUpgrade = true;
-      } else if (profile.upgrades && Array.isArray(profile.upgrades)) {
-        // Verificar si tiene upgrade DESTACADO/HIGHLIGHT activo
+      } else if (Array.isArray(profile.upgrades)) {
         hasDestacadoUpgrade = profile.upgrades.some((upgrade: any) =>
           ['DESTACADO', 'HIGHLIGHT'].includes(upgrade.code) &&
-          upgrade.startAt &&
-          upgrade.endAt &&
+          upgrade.startAt && upgrade.endAt &&
           new Date(upgrade.startAt) <= now &&
           new Date(upgrade.endAt) > now
         );
       }
 
-      // Manually populate features if featureGroups exists or using fallback
-      if (profile.features && Array.isArray(profile.features)) {
-        // DEBUG: Log para verificar población de features
-        if (index === 0) {
-          // console.log('🔍 [FILTROS DEBUG] FeatureGroups count:', (profile as any).featureGroups?.length || 0);
-          // console.log('🔍 [FILTROS DEBUG] Features before populate:', JSON.stringify(profile.features.slice(0, 2)));
-        }
-
-        profile.features = profile.features.map((f: any) => {
-          // Intentar usar featureGroups del lookup primero
-          let group = (profile as any).featureGroups?.find((g: any) => g._id.toString() === f.group_id.toString());
-
-          // Si no se encuentra (por fallo en lookup o tipos), usar la lista completa
-          if (!group && allAttributeGroups) {
-            group = allAttributeGroups.find((g: any) => g._id.toString() === f.group_id.toString());
-          }
-
+      // Poblar features usando featureGroups del lookup del pipeline
+      const populatedFeatures = Array.isArray(profile.features)
+        ? profile.features.map((f: any) => {
+          const group = Array.isArray(profile.featureGroups)
+            ? profile.featureGroups.find((g: any) => g._id.toString() === f.group_id?.toString())
+            : undefined;
           return { ...f, group_id: group || f.group_id };
-        });
+        })
+        : [];
 
-        if (index === 0) {
-          // console.log('🔍 [FILTROS DEBUG] Features after populate:', JSON.stringify(profile.features.slice(0, 2)));
-        }
-      }
-
-      // Extraer categoría
-      const category = extractCategoryFromFeatures(profile.features);
+      const category = extractCategoryFromFeatures(populatedFeatures);
 
       if (index === 0) {
         console.log('🔍 [FILTROS DEBUG] Extracted category:', category);
       }
 
+      // Respuesta mínima para el frontend (ProfileCard)
       return {
-        ...profile,
+        _id: profile._id,
+        name: profile.name,
+        age: profile.age,
+        location: profile.location,
+        description: profile.description,
+        media: { gallery: profile.media?.gallery || [] },
+        online: profile.online,
+        hasVideo: profile.hasVideo,
         hasDestacadoUpgrade,
         category,
         verification: {
-          ...verification,
-          isVerified,        // Booleano simple para el frontend
-          verificationLevel, // Estado legible (verified/partial/pending)
-          // Mantenemos el progreso original de la DB
-          verificationProgress: progress
-        }
+          isVerified,
+          verificationLevel,
+          verificationProgress: progress,
+          steps: {
+            selfieVerification: (verification as any).steps?.selfieVerification,
+            deposito: (verification as any).steps?.deposito,
+          },
+        },
       };
     });
 

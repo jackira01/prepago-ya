@@ -1,34 +1,59 @@
-# Usa la imagen ligera de Bun 2026
+# ==========================================
+# ETAPA 1: Instalación (Base)
+# ==========================================
 FROM oven/bun:1.2-slim AS base
 WORKDIR /app
 
-# Copiamos archivos de configuración (Asegúrate de tener bun.lockb)
-COPY package.json bun.lockb ./
+# Copiamos los manifiestos del monorepo
+# Copiar el package.json del frontend es obligatorio para que Bun reconozca el workspace
+COPY package.json bun.lockb* ./
 COPY backend/package.json ./backend/
 COPY frontend/package.json ./frontend/
 
-# Instalamos dependencias de todo el monorepo
+# Instalamos todas las dependencias
+# Usamos --frozen-lockfile para asegurar que las versiones sean exactas
 RUN bun install --frozen-lockfile
 
-# Copiamos el resto del código
-COPY . .
-
-# Construimos el backend (y el frontend si lo despliegas aquí)
-RUN bun run build:backend
-
-# Etapa de ejecución
-FROM oven/bun:1.2-slim AS release
+# ==========================================
+# ETAPA 2: Construcción (Builder)
+# ==========================================
+FROM base AS builder
 WORKDIR /app
 
-# Copiamos solo lo necesario desde la etapa de build
-COPY --from=base /app/backend/dist ./backend/dist
-COPY --from=base /app/node_modules ./node_modules
-COPY --from=base /app/backend/package.json ./backend/package.json
+# Copiamos el código fuente del backend y la config de TS de la raíz
+COPY backend/ ./backend/
+COPY tsconfig.json* ./
 
-# Variable de entorno para producción
+# Entramos a la carpeta del backend y compilamos
+WORKDIR /app/backend
+RUN bun run build:prod
+
+# ==========================================
+# ETAPA 3: Producción (Final)
+# ==========================================
+FROM oven/bun:1.2-slim AS production
+WORKDIR /app
+
+# Definimos que estamos en producción
 ENV NODE_ENV=production
+ENV PORT=5000
 
+# Copiamos solo lo estrictamente necesario de las etapas anteriores
+# 1. Las dependencias ya instaladas
+COPY --from=base /app/node_modules ./node_modules
+# 2. El código ya compilado (JS plano)
+COPY --from=builder /app/backend/dist ./backend/dist
+# 3. El package.json del backend para los scripts
+COPY --from=builder /app/backend/package.json ./backend/package.json
+
+# Seguridad: Crear un usuario sin privilegios de root para ejecutar la app
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 bunuser
+USER bunuser
+
+# Exponemos el puerto del backend
 EXPOSE 5000
 
-# Ejecutamos con el runtime de Bun
+# Comando para iniciar la aplicación usando el runtime de Bun
+# Apuntamos directamente al archivo compilado en dist
 CMD ["bun", "run", "backend/dist/server.js"]

@@ -1,82 +1,32 @@
-# Dependencias
+# Dependencias y Logs
 node_modules
-npm-debug.log
-yarn-debug.log
-yarn-error.log
-pnpm-debug.log
+**/node_modules
+*.log
+.npm
+.bun
 
-# Frontend (no incluir en build de backend)
-frontend/
+# Ignorar TODO el contenido del frontend...
+frontend/*
+# ...PERO NO su package.json (Vital para Bun)
+!frontend/package.json
 
-# Archivos de desarrollo
-.env
-.env.*
-.env.local
-.env.development
-.env.test
+# Archivos de desarrollo y Git
+.git
+.gitignore
+.dockerignore
+.vscode
+.env*
+.idea
 
-# Build
+# Builds y temporales
 dist
+backend/dist
+.next
 build
 *.tsbuildinfo
 
-# Logs
-logs
-*.log
-
-# Control de versiones
-.git
-.gitignore
-.gitattributes
-
-# IDE
-.vscode
-.idea
-*.swp
-*.swo
-*~
-
-# Testing
-coverage
-.nyc_output
-*.test.ts
-*.spec.ts
-__tests__
-__mocks__
-
-# Documentación
-README.md
-*.md
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Docker
-.dockerignore
+# Docker y despliegue
 Dockerfile
 docker-compose*.yml
-
-# CapRover
 captain-definition*
-
-# Scripts de desarrollo
-scripts/deploy.sh
-scripts/backup.sh
-
-# Configuración local
-.prettierrc
-.eslintrc
-.editorconfig
-tsconfig.json
-nodemon.json
-
-# MongoDB
-mongodb.Dockerfile
-
-# Nginx
 nginx/
-
-# Monitoreo
-monitoring.config.js
-lighthouserc.js

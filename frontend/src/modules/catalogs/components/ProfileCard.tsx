@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { VerificationBar } from '@/components/VerificationBar/VerificationBar';
-import type { LocationValue, ProfileCardData } from '@/types/profile.types';
+import type { ProfileCardData } from '@/types/profile.types';
 import {
   formatLocation
 } from '@/utils/profile.utils';

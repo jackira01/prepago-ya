@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Camera, CheckCircle, Video, FileCheck, Banknote } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Banknote, Camera, CheckCircle, FileCheck, Video } from 'lucide-react';
+import { useCallback, useState } from 'react';
 
 export interface HorizontalFilterBarFilters {
   identityVerified?: boolean;

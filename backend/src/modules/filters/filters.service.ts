@@ -661,11 +661,11 @@ export const getFilteredProfiles = async (
       // Poblar features usando featureGroups del lookup del pipeline
       const populatedFeatures = Array.isArray(profile.features)
         ? profile.features.map((f: any) => {
-            const group = Array.isArray(profile.featureGroups)
-              ? profile.featureGroups.find((g: any) => g._id.toString() === f.group_id?.toString())
-              : undefined;
-            return { ...f, group_id: group || f.group_id };
-          })
+          const group = Array.isArray(profile.featureGroups)
+            ? profile.featureGroups.find((g: any) => g._id.toString() === f.group_id?.toString())
+            : undefined;
+          return { ...f, group_id: group || f.group_id };
+        })
         : [];
 
       const category = extractCategoryFromFeatures(populatedFeatures);

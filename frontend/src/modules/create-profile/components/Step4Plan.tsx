@@ -558,10 +558,6 @@ export function Step4Plan() {
               <div className="space-y-4">
                 {/* Información del Plan */}
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Código</span>
-                    <p className="text-foreground font-medium">{selectedPlan.code}</p>
-                  </div>
                   {selectedVariant && (
                     <>
                       <div>

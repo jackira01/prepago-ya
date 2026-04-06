@@ -228,19 +228,36 @@ const VerificationStepRenderer: React.FC<VerificationStepRenderProps> = ({
             </p>
           </div>
 
-          {/* Mostrar el link actual si existe */}
+          {/* Mostrar el video actual si existe */}
           {currentVideoLink && (
             <div>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  window.open(currentVideoLink, '_blank');
-                }}
-                className="flex items-center gap-2"
-              >
-                <ExternalLink className="h-4 w-4" />
-                Abrir videollamada
-              </Button>
+              {(
+                currentVideoLink.includes('.mp4') ||
+                currentVideoLink.includes('.webm') ||
+                currentVideoLink.includes('.ogg') ||
+                currentVideoLink.includes('cloudinary') ||
+                currentVideoLink.includes('res.cloudinary')
+              ) ? (
+                <video
+                  src={currentVideoLink}
+                  controls
+                  className="w-full max-w-md mx-auto rounded-lg shadow-md"
+                  style={{ maxHeight: '300px' }}
+                >
+                  Tu navegador no soporta el elemento de video.
+                </video>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    window.open(currentVideoLink, '_blank');
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Abrir videollamada
+                </Button>
+              )}
             </div>
           )}
         </div>

@@ -121,6 +121,14 @@ const HeaderComponent = () => {
                 Blog
               </Button>
             </Link>
+            <Link href="/planes">
+              <Button
+                variant="ghost"
+                className="text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-200"
+              >
+                Planes
+              </Button>
+            </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -132,11 +140,6 @@ const HeaderComponent = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem asChild>
-                  <Link href="/planes" className="flex items-center w-full cursor-pointer">
-                    Planes
-                  </Link>
-                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/faq" className="flex items-center w-full cursor-pointer">
                     FAQ
@@ -244,6 +247,14 @@ const HeaderComponent = () => {
                 Blog
               </Button>
             </Link>
+            <Link href="/planes" onClick={() => setMobileMenuOpen(false)}>
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-200"
+              >
+                Planes
+              </Button>
+            </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -255,11 +266,6 @@ const HeaderComponent = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-48">
-                <DropdownMenuItem asChild>
-                  <Link href="/planes" className="flex items-center w-full cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
-                    Planes
-                  </Link>
-                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/faq" className="flex items-center w-full cursor-pointer" onClick={() => setMobileMenuOpen(false)}>
                     FAQ

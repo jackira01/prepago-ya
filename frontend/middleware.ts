@@ -28,7 +28,8 @@ const EXCLUDED_ROUTES = [
   'buscar', 'faq', 'precios', 'terminos', 'terms', 'blog', 'plans',
   '_next', 'favicon.ico', 'robots.txt', 'sitemap.xml', 'images',
   'placeholder-logo.png', 'placeholder-logo.svg', 'placeholder-user.jpg',
-  'placeholder.jpg', 'placeholder.svg', 'installHook.js.map', 'installHook'
+  'placeholder.jpg', 'placeholder.svg', 'installHook.js.map', 'installHook',
+  '.well-known',
 ];
 
 // ===== CONFIGURACIÓN DE AUTENTICACIÓN =====

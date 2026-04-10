@@ -1,18 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { signIn } from 'next-auth/react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { Eye, EyeOff, Loader2, Mail, Lock, AlertCircle, CheckCircle, Info } from 'lucide-react';
-import { z } from 'zod';
 import { initiatePasswordCreation } from '@/lib/account-linking';
+import { AlertCircle, CheckCircle, Eye, EyeOff, Info, Loader2, Lock, Mail } from 'lucide-react';
+import { signIn } from 'next-auth/react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { z } from 'zod';
 
 // Esquema de validación
 const loginSchema = z.object({
@@ -40,6 +40,7 @@ export default function SignInLayout() {
   const [success, setSuccess] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [showCreatePassword, setShowCreatePassword] = useState(false);
+  const [googleOnlyError, setGoogleOnlyError] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -142,6 +143,7 @@ export default function SignInLayout() {
     setSuccess(null);
     setInfo(null);
     setShowCreatePassword(false);
+    setGoogleOnlyError(false);
 
     // Validar formulario
     if (!validateForm()) {
@@ -151,8 +153,21 @@ export default function SignInLayout() {
     setIsLoading(true);
 
     try {
-      // Normalizar email a minúsculas antes de enviar
       const normalizedEmail = formData.email.toLowerCase().trim();
+
+      // Pre-check directo al backend para detectar el proveedor del usuario
+      // antes de pasar por NextAuth, evitando que envuelva los errores
+      const checkRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/check-auth-method`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: normalizedEmail }),
+      });
+      const checkData = await checkRes.json();
+
+      if (checkData.success && checkData.isGoogleOnly) {
+        setGoogleOnlyError(true);
+        return;
+      }
 
       const result = await signIn('credentials', {
         redirect: false,
@@ -166,50 +181,20 @@ export default function SignInLayout() {
       }
 
       if (result.error) {
-        // Manejar errores específicos
-        if (result.error.includes('Cuenta creada con Google')) {
-          setInfo('Esta cuenta fue creada con Google. Puedes crear una contraseña o usar Google para iniciar sesión.');
-          setShowCreatePassword(true);
-        } else if (result.error.includes('crear una contraseña')) {
-          setInfo('Para usar email/contraseña, primero debes crear una contraseña para tu cuenta.');
-          setShowCreatePassword(true);
+        if (result.error === 'AccessDenied') {
+          setAuthError('Acceso denegado. Verifica tu cuenta o contacta al administrador.');
         } else {
-          // Manejar mensajes específicos del backend
-          if (result.error.includes('Credenciales inválidas')) {
-            setAuthError('Email o contraseña incorrectos. Verifica tus datos e intenta nuevamente.');
-          } else if (result.error.includes('no tiene contraseña configurada')) {
-            setInfo('Esta cuenta fue creada con Google. Puedes crear una contraseña o usar Google para iniciar sesión.');
-            setShowCreatePassword(true);
-          } else {
-            switch (result.error) {
-              case 'CredentialsSignin':
-                setAuthError('Email o contraseña incorrectos. Verifica tus datos e intenta nuevamente.');
-                break;
-              case 'AccessDenied':
-                setAuthError('Acceso denegado. Verifica tu cuenta o contacta al administrador.');
-                break;
-              case 'CallbackRouteError':
-                setAuthError('Error en el servidor. Por favor, intenta nuevamente en unos momentos.');
-                break;
-              default:
-                // Log del error específico para debugging
-                console.error('Error específico de NextAuth:', result.error);
-                setAuthError('Error de autenticación. Por favor, verifica tus credenciales e intenta nuevamente.');
-            }
-          }
+          setAuthError('Email o contraseña incorrectos. Verifica tus datos e intenta nuevamente.');
         }
         return;
       }
 
       // Login exitoso - redirigir
       setSuccess('¡Bienvenido! Redirigiendo...');
-
-      // Usar window.location.href para una redirección más confiable
       setTimeout(() => {
         window.location.href = '/';
       }, 1000);
     } catch (error) {
-      // Solo mostrar error de conexión si es realmente un error de red
       console.error('Error durante el login:', error);
       if (error instanceof TypeError && error.message.includes('fetch')) {
         setAuthError('Error de conexión. Verifica tu internet e intenta nuevamente.');
@@ -230,6 +215,7 @@ export default function SignInLayout() {
     setAuthError(null);
     setSuccess(null);
     setInfo(null);
+    setGoogleOnlyError(false);
 
     setIsLoading(true);
     try {
@@ -271,6 +257,27 @@ export default function SignInLayout() {
             <Alert className="border-blue-200 bg-blue-50 text-blue-800">
               <Info className="h-4 w-4" />
               <AlertDescription>{info}</AlertDescription>
+            </Alert>
+          )}
+
+          {googleOnlyError && (
+            <Alert className="border-orange-200 bg-orange-50 text-orange-800">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="space-y-2">
+                <p className="font-medium">Esta cuenta está vinculada a Google</p>
+                <p className="text-sm">Tu cuenta fue creada con Google. Debes iniciar sesión con Google para continuar.</p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="mt-2 border-orange-400 text-orange-800 hover:bg-orange-100"
+                  onClick={handleGoogleSignIn}
+                  disabled={isLoading}
+                >
+                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Continuar con Google
+                </Button>
+              </AlertDescription>
             </Alert>
           )}
 

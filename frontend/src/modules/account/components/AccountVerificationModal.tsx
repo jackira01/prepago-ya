@@ -46,6 +46,7 @@ export default function AccountVerificationModal({
     const [selectedAccountType, setSelectedAccountType] = useState<'common' | 'agency'>('common');
     const [uploadedFiles, setUploadedFiles] = useState({
         image1: null as File | null,
+        backDoc: null as File | null,
         image2: null as File | null,
         image3: null as File | null,
     });
@@ -74,6 +75,7 @@ export default function AccountVerificationModal({
         // Recopilar solo los archivos que se han subido
         const filesToUpload = [
             uploadedFiles.image1,
+            uploadedFiles.backDoc,
             uploadedFiles.image2,
             uploadedFiles.image3,
         ].filter((file): file is File => file !== null);
@@ -91,6 +93,9 @@ export default function AccountVerificationModal({
 
                 if (uploadedFiles.image1) {
                     updatedUrls[0] = filteredUrls[urlIndex++];
+                }
+                if (uploadedFiles.backDoc) {
+                    updatedUrls[3] = filteredUrls[urlIndex++];
                 }
                 if (uploadedFiles.image2) {
                     updatedUrls[1] = filteredUrls[urlIndex++];
@@ -122,7 +127,7 @@ export default function AccountVerificationModal({
             });
 
             setShowUploadForm(false);
-            setUploadedFiles({ image1: null, image2: null, image3: null });
+            setUploadedFiles({ image1: null, backDoc: null, image2: null, image3: null });
             toast.success('Información de cuenta actualizada con éxito.', { id: toastId });
             onClose();
         } catch (error) {
@@ -136,13 +141,13 @@ export default function AccountVerificationModal({
     };
 
     const hasExistingDocuments = Boolean(user?.verificationDocument?.filter(Boolean).length);
-    const hasNewFiles = Boolean(uploadedFiles.image1 || uploadedFiles.image2 || uploadedFiles.image3);
+    const hasNewFiles = Boolean(uploadedFiles.image1 || uploadedFiles.backDoc || uploadedFiles.image2 || uploadedFiles.image3);
     const accountTypeChanged = selectedAccountType !== (user?.accountType || 'common');
     const canSubmit = Boolean(selectedAccountType) && (hasNewFiles || hasExistingDocuments || accountTypeChanged);
 
     const handleClose = () => {
         setShowUploadForm(false);
-        setUploadedFiles({ image1: null, image2: null, image3: null });
+        setUploadedFiles({ image1: null, backDoc: null, image2: null, image3: null });
         onClose();
     };
 
@@ -404,6 +409,88 @@ export default function AccountVerificationModal({
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Imagen Reverso: Documento de Identidad (Reverso) */}
+                            {(() => {
+                                const hasFrontDoc = Boolean(uploadedFiles.image1 || user?.verificationDocument?.[0]);
+                                const isDisabled = !hasFrontDoc;
+                                return (
+                                    <div className="space-y-3">
+                                        <Label className={`font-medium ${isDisabled ? 'text-muted-foreground' : 'text-foreground'}`}>
+                                            Documento de Identidad (Reverso)
+                                            {isDisabled && (
+                                                <span className="ml-2 text-xs text-amber-600 font-normal">
+                                                    — Sube primero el frente del documento
+                                                </span>
+                                            )}
+                                        </Label>
+
+                                        <div className="mb-3 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200">
+                                            <p className={`text-sm font-medium mb-2 ${isDisabled ? 'text-muted-foreground' : 'text-blue-800 dark:text-blue-200'}`}>
+                                                📋 Ejemplo de referencia:
+                                            </p>
+                                            <p className={`text-xs mt-2 text-center ${isDisabled ? 'text-muted-foreground' : 'text-blue-700 dark:text-blue-300'}`}>
+                                                Foto clara del reverso del documento de identidad
+                                            </p>
+                                        </div>
+
+                                        <div
+                                            className={`relative border-2 border-dashed rounded-lg text-center transition-colors duration-200
+                                                ${isDisabled
+                                                    ? 'border-muted-foreground/20 bg-muted/30 cursor-not-allowed opacity-60'
+                                                    : uploadedFiles.backDoc
+                                                        ? 'border-green-300 bg-green-50/30 dark:bg-green-950/10 cursor-pointer'
+                                                        : user?.verificationDocument?.[3]
+                                                            ? 'border-blue-300 bg-blue-50/30 dark:bg-blue-950/10 cursor-pointer'
+                                                            : 'hover:border-purple-500 border-muted-foreground/30 cursor-pointer'
+                                                }`}
+                                        >
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                disabled={isDisabled}
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) handleFileUpload('backDoc', file);
+                                                }}
+                                                className={`absolute inset-0 w-full h-full opacity-0 z-10 ${isDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                                            />
+                                            <div className="p-8 flex flex-col items-center justify-center pointer-events-none">
+                                                {uploadedFiles.backDoc ? (
+                                                    <>
+                                                        <CheckCircle className="h-10 w-10 text-green-500 mb-2" />
+                                                        <p className="text-sm text-foreground font-medium">{uploadedFiles.backDoc.name}</p>
+                                                        <p className="text-xs text-green-600 mt-1">Archivo cargado correctamente</p>
+                                                    </>
+                                                ) : user?.verificationDocument?.[3] ? (
+                                                    <>
+                                                        <div className="mb-3">
+                                                            <img
+                                                                src={user.verificationDocument[3]}
+                                                                alt="Reverso actual"
+                                                                className="max-w-full h-auto max-h-32 rounded-lg border border-gray-300 dark:border-gray-600"
+                                                            />
+                                                        </div>
+                                                        <CheckCircle className="h-8 w-8 text-blue-500 mb-2" />
+                                                        <p className="text-sm text-foreground font-medium">Documento actual subido</p>
+                                                        <p className="text-xs text-blue-600 mt-1">Clic para cambiar</p>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Camera className={`h-10 w-10 mb-2 ${isDisabled ? 'text-muted-foreground/40' : 'text-muted-foreground'}`} />
+                                                        <p className={`text-sm ${isDisabled ? 'text-muted-foreground/60' : 'text-muted-foreground'}`}>
+                                                            Subir documento (reverso)
+                                                        </p>
+                                                        <p className={`text-xs mt-1 ${isDisabled ? 'text-muted-foreground/40' : 'text-muted-foreground'}`}>
+                                                            JPG, PNG hasta 10MB
+                                                        </p>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
 
                             {/* Imagen 2: Video o Foto de Verificación con Cartel */}
                             <div className="space-y-3">

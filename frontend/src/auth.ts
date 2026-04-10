@@ -1,6 +1,10 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
+
+class GoogleOnlySignInError extends CredentialsSignin {
+  code = "google_only_account";
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
@@ -44,6 +48,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const result = await response.json();
 
           if (!result.success) {
+            if (result.provider === 'google') {
+              throw new GoogleOnlySignInError();
+            }
             throw new Error(result.message || "Credenciales inválidas");
           }
 
@@ -64,6 +71,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             accessToken: result.token // Capturar el token del backend
           };
         } catch (error) {
+          // Re-lanzar CredentialsSignin subclasses sin envolver para que
+          // @auth/core las reconozca correctamente y propague el code al cliente
+          if (error instanceof CredentialsSignin) throw error;
           throw new Error(error instanceof Error ? error.message : "Error de autenticación");
         }
       },

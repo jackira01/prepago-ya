@@ -1,6 +1,6 @@
 import { Router } from 'express';
+import { adminMiddleware, authMiddleware } from '../../middlewares';
 import * as userController from './user.controller';
-import { authMiddleware, adminMiddleware } from '../../middlewares';
 
 const router = Router();
 
@@ -19,6 +19,7 @@ router.post('/register', userController.registerUserController);
 router.post('/login', userController.loginUserController);
 router.post('/auth_google', userController.authGoogleUserController);
 router.post('/verify_user', userController.verifyUserController);
+router.post('/check-auth-method', userController.checkAuthMethodController);
 
 // Rutas de recuperación de contraseña
 router.post('/request-password-reset', userController.requestPasswordResetController);

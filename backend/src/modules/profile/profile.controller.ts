@@ -1,7 +1,9 @@
 import type { Response } from 'express';
+import { notifyN8nWebhook } from '../../services/n8n-webhook.service';
 import type { AuthRequest } from '../../types/auth.types';
 import { ConfigParameterService } from '../config-parameter/config-parameter.service';
 import { UpgradeDefinitionModel } from '../plans/upgrade.model';
+import UserModel from '../user/User.model';
 import {
   BusinessValidationError,
   getUserUsageStats,
@@ -123,6 +125,20 @@ export const createProfile = async (req: AuthRequest, res: Response) => {
     if (!result.profile) {
       throw new Error('Error interno: No se pudo crear el perfil');
     }
+
+    // Notificar flujo de creación de perfil a n8n
+    let webhookUserEmail: string | undefined;
+    try {
+      const userDoc = await UserModel.findById(result.profile.user).select('email').lean() as any;
+      webhookUserEmail = userDoc?.email;
+    } catch { /* no interrumpir flujo principal */ }
+
+    notifyN8nWebhook({
+      flow: 'profile_created',
+      email: webhookUserEmail,
+      name: result.profile.name,
+      createdAt: (result.profile as any).createdAt ?? new Date(),
+    });
 
     // Respuesta diferenciada según si se generó factura
     if (result.invoice) {

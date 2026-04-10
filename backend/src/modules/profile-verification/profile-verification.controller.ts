@@ -1,5 +1,7 @@
 import type { Request, Response } from 'express';
 import EmailService from '../../services/email.service';
+import { buildProfileVerificationLabels, diffVerificationSteps, notifyN8nWebhook } from '../../services/n8n-webhook.service';
+import UserModel from '../user/User.model';
 import * as profileVerificationService from './profile-verification.service';
 import {
   CreateProfileVerificationDTO,
@@ -276,7 +278,9 @@ export const updateVerificationSteps = async (req: Request, res: Response): Prom
       return;
     }
 
-
+    // Obtener estado actual ANTES del update para calcular el diff real
+    const currentVerification = await profileVerificationService.getProfileVerificationById(id);
+    const currentSteps = (currentVerification?.steps ?? {}) as Record<string, unknown>;
 
     const updatedVerification = await profileVerificationService.updateVerificationSteps(id, stepsData);
 
@@ -316,6 +320,26 @@ ${Object.entries(stepsData).map(([step, data]: [string, any]) =>
       // Log del error pero no fallar la respuesta principal
       console.error('Error al enviar notificación por correo:', emailError);
     }
+
+    // Notificar flujo de actualización de verificación de perfil a n8n
+    let webhookUserEmail: string | undefined;
+    try {
+      const profileUserId = (updatedVerification?.profile as any)?.user?._id
+        ?? (updatedVerification?.profile as any)?.user;
+      if (profileUserId) {
+        const userDoc = await UserModel.findById(profileUserId).select('email').lean() as any;
+        webhookUserEmail = userDoc?.email;
+      }
+    } catch { /* no interrumpir flujo principal */ }
+
+    notifyN8nWebhook({
+      flow: 'profile_verification_updated',
+      email: webhookUserEmail,
+      profileName: (updatedVerification?.profile as any)?.name,
+      modifiedData: buildProfileVerificationLabels(
+        diffVerificationSteps(stepsData as Record<string, unknown>, currentSteps)
+      ),
+    });
 
     res.status(200).json({
       success: true,

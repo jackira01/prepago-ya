@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { TimePicker } from '@/components/ui/time-picker';
-import { Clock, Copy, Check, Calendar } from 'lucide-react';
+import { Calendar, Check, Clock, Copy } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 interface AvailabilitySlot {
     start: string;
@@ -293,20 +293,20 @@ export function AvailabilitySchedule({
                                         <div className="space-y-2">
                                             <Label className="text-sm font-medium">Hora de inicio</Label>
                                             <TimePicker
-                                                    value={bulkStartTime}
-                                                    onChange={(value) => setBulkStartTime(value)}
-                                                    placeholder="Seleccionar hora de inicio"
-                                                    maxTime={bulkEndTime}
-                                                />
+                                                value={bulkStartTime}
+                                                onChange={(value) => setBulkStartTime(value)}
+                                                placeholder="Seleccionar hora de inicio"
+                                                maxTime={bulkEndTime}
+                                            />
                                         </div>
                                         <div className="space-y-2">
                                             <Label className="text-sm font-medium">Hora de fin</Label>
                                             <TimePicker
-                                                    value={bulkEndTime}
-                                                    onChange={(value) => setBulkEndTime(value)}
-                                                    placeholder="Seleccionar hora de fin"
-                                                    minTime={bulkStartTime}
-                                                />
+                                                value={bulkEndTime}
+                                                onChange={(value) => setBulkEndTime(value)}
+                                                placeholder="Seleccionar hora de fin"
+                                                minTime={bulkStartTime}
+                                            />
                                         </div>
                                     </div>
 

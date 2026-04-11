@@ -1,14 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { TimePicker } from '@/components/ui/time-picker';
-import { Clock, Copy, Check, Calendar } from 'lucide-react';
+import { Calendar, Check, Clock, Copy } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 interface AvailabilitySlot {
     start: string;
@@ -293,33 +292,21 @@ export function AvailabilitySchedule({
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label className="text-sm font-medium">Hora de inicio</Label>
-                                            <div className="flex items-center gap-2">
-                                                <TimePicker
-                                                    value={bulkStartTime}
-                                                    onChange={(value) => setBulkStartTime(value)}
-                                                    className="flex-1"
-                                                    placeholder="Seleccionar hora de inicio"
-                                                    maxTime={bulkEndTime}
-                                                />
-                                                <span className="text-xs text-muted-foreground">
-                                                    {formatTime12Hour(bulkStartTime)}
-                                                </span>
-                                            </div>
+                                            <TimePicker
+                                                value={bulkStartTime}
+                                                onChange={(value) => setBulkStartTime(value)}
+                                                placeholder="Seleccionar hora de inicio"
+                                                maxTime={bulkEndTime}
+                                            />
                                         </div>
                                         <div className="space-y-2">
                                             <Label className="text-sm font-medium">Hora de fin</Label>
-                                            <div className="flex items-center gap-2">
-                                                <TimePicker
-                                                    value={bulkEndTime}
-                                                    onChange={(value) => setBulkEndTime(value)}
-                                                    className="flex-1"
-                                                    placeholder="Seleccionar hora de fin"
-                                                    minTime={bulkStartTime}
-                                                />
-                                                <span className="text-xs text-muted-foreground">
-                                                    {formatTime12Hour(bulkEndTime)}
-                                                </span>
-                                            </div>
+                                            <TimePicker
+                                                value={bulkEndTime}
+                                                onChange={(value) => setBulkEndTime(value)}
+                                                placeholder="Seleccionar hora de fin"
+                                                minTime={bulkStartTime}
+                                            />
                                         </div>
                                     </div>
 
@@ -411,21 +398,13 @@ export function AvailabilitySchedule({
                                     <Label className="text-xs text-muted-foreground">
                                         Hora de inicio
                                     </Label>
-                                    <div className="flex items-center gap-2">
-                                        <TimePicker
-                                            value={dayStates[day].startTime}
-                                            onChange={(value) => handleTimeChange(day, 'startTime', value)}
-                                            disabled={!dayStates[day].isAvailable}
-                                            className="flex-1"
-                                            placeholder="Seleccionar hora"
-                                            maxTime={dayStates[day].endTime} // ✅ No permitir >= hora fin
-                                        />
-                                        <span className="text-xs text-muted-foreground min-w-[60px]">
-                                            {dayStates[day].isAvailable
-                                                ? formatTime12Hour(dayStates[day].startTime)
-                                                : '--'}
-                                        </span>
-                                    </div>
+                                    <TimePicker
+                                        value={dayStates[day].startTime}
+                                        onChange={(value) => handleTimeChange(day, 'startTime', value)}
+                                        disabled={!dayStates[day].isAvailable}
+                                        placeholder="Seleccionar hora"
+                                        maxTime={dayStates[day].endTime}
+                                    />
                                 </div>
 
                                 {/* Hora de fin */}
@@ -433,21 +412,13 @@ export function AvailabilitySchedule({
                                     <Label className="text-xs text-muted-foreground">
                                         Hora de fin
                                     </Label>
-                                    <div className="flex items-center gap-2">
-                                        <TimePicker
-                                            value={dayStates[day].endTime}
-                                            onChange={(value) => handleTimeChange(day, 'endTime', value)}
-                                            disabled={!dayStates[day].isAvailable || !dayStates[day].startTime}
-                                            className="flex-1"
-                                            placeholder="Seleccionar hora"
-                                            minTime={dayStates[day].startTime} // ✅ No permitir <= hora inicio
-                                        />
-                                        <span className="text-xs text-muted-foreground min-w-[60px]">
-                                            {dayStates[day].isAvailable
-                                                ? formatTime12Hour(dayStates[day].endTime)
-                                                : '--'}
-                                        </span>
-                                    </div>
+                                    <TimePicker
+                                        value={dayStates[day].endTime}
+                                        onChange={(value) => handleTimeChange(day, 'endTime', value)}
+                                        disabled={!dayStates[day].isAvailable || !dayStates[day].startTime}
+                                        placeholder="Seleccionar hora"
+                                        minTime={dayStates[day].startTime}
+                                    />
                                 </div>
                             </div>
 

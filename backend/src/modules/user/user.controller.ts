@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import type { Request, Response } from 'express';
 import EmailService from '../../services/email.service';
 import { JWTService } from '../../services/jwt.service';
+import { buildUserUpdateLabels, notifyN8nWebhook } from '../../services/n8n-webhook.service';
 import { sendWelcomeEmail } from '../../utils/welcome-email.util';
 import UserModel from './User.model';
 import * as userService from './user.service';
@@ -18,6 +19,14 @@ export const CreateUserController = async (req: Request, res: Response) => {
         // Error enviando correo de bienvenida
         // No fallar el registro por error de email
       }
+
+      notifyN8nWebhook({
+        flow: 'user_registered',
+        email: user.email,
+        name: user.name,
+        createdAt: (user as any).createdAt ?? new Date(),
+        message: `Nuevo usuario registrado (admin): ${user.name} (${user.email})`,
+      });
     }
 
     res.status(201).json(user);
@@ -283,6 +292,14 @@ export const registerUserController = async (req: Request, res: Response) => {
       // No fallar el registro por error de email, pero informar al usuario
     }
 
+    // Notificar flujo de registro a n8n
+    notifyN8nWebhook({
+      flow: 'user_registered',
+      email: user.email,
+      name: user.name,
+      createdAt: (user as any).createdAt ?? new Date(),
+    });
+
     res.status(201).json({
       success: true,
       message: 'Usuario registrado exitosamente. Revisa tu email para verificar tu cuenta.',
@@ -301,6 +318,36 @@ export const registerUserController = async (req: Request, res: Response) => {
       success: false,
       message: 'Error interno del servidor'
     });
+  }
+};
+
+// Verificar el método de autenticación de un usuario (sin exponer datos sensibles)
+export const checkAuthMethodController = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email es requerido' });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await userService.findUserByEmail(normalizedEmail);
+
+    if (!user) {
+      // Responder como si fuera credentials para no revelar si el email existe
+      return res.status(200).json({ success: true, providers: ['credentials'] });
+    }
+
+    const providers: string[] = Array.isArray(user.providers) ? user.providers : [];
+    const isGoogleOnly = providers.includes('google') && !providers.includes('credentials');
+
+    return res.status(200).json({
+      success: true,
+      providers,
+      isGoogleOnly,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 };
 
@@ -326,6 +373,19 @@ export const loginUserController = async (req: Request, res: Response) => {
       return res.status(401).json({
         success: false,
         message: 'Credenciales inválidas'
+      });
+    }
+
+    // Verificar si el usuario se registró exclusivamente con Google
+    if (
+      Array.isArray(user.providers) &&
+      user.providers.includes('google') &&
+      !user.providers.includes('credentials')
+    ) {
+      return res.status(401).json({
+        success: false,
+        message: 'Tu cuenta fue creada con Google. Por favor, inicia sesión con Google para continuar.',
+        provider: 'google'
       });
     }
 
@@ -529,7 +589,7 @@ export const authGoogleUserController = async (req: Request, res: Response) => {
     });
   }
 
-  // Enviar correo de bienvenida para nuevos usuarios
+  // Enviar correo de bienvenida y notificar webhook para nuevos usuarios
   if (isNewUser) {
     try {
       await sendWelcomeEmail(user.email, name);
@@ -537,6 +597,14 @@ export const authGoogleUserController = async (req: Request, res: Response) => {
       // Error enviando correo de bienvenida
       // No fallar el registro por error de email
     }
+
+    notifyN8nWebhook({
+      flow: 'user_registered',
+      email: user.email,
+      name: user.name,
+      createdAt: (user as any).createdAt ?? new Date(),
+      message: `Nuevo usuario registrado (Google): ${user.name} (${user.email})`,
+    });
   }
 
   // Generar JWT Token
@@ -618,7 +686,7 @@ export const updateUser = async (req: Request, res: Response) => {
       });
     }
 
-    // Si se actualizaron documentos de verificación, enviar notificación por email
+    // Si se actualizaron documentos de verificación, enviar notificación por email y n8n
     if (updateData.verification_in_progress === true && updateData.verificationDocument) {
       try {
         const emailService = new EmailService();
@@ -632,6 +700,23 @@ export const updateUser = async (req: Request, res: Response) => {
         // Error al enviar email de notificación, pero no fallar la actualización
         console.error('Error al enviar notificación de verificación:', emailError);
       }
+
+      // Notificar flujo de verificación de usuario a n8n
+      // Excluir accountType de las etiquetas si no cambió respecto al valor actual del usuario
+      const effectiveLabelData = { ...updateData } as Record<string, unknown>;
+      if (effectiveLabelData.accountType !== undefined && effectiveLabelData.accountType === user.accountType) {
+        delete effectiveLabelData.accountType;
+      }
+      const userUpdateLabels = buildUserUpdateLabels(effectiveLabelData);
+      notifyN8nWebhook({
+        flow: 'user_verification_updated',
+        email: user.email,
+        name: user.name,
+        modifiedData: userUpdateLabels,
+        message: userUpdateLabels.length > 0
+          ? `El usuario ${user.name} (${user.email}) actualizó su verificación. Campos modificados: ${userUpdateLabels.join(', ')}`
+          : `El usuario ${user.name} (${user.email}) envió su verificación de cuenta`,
+      });
     }
 
     // Usuario actualizado exitosamente

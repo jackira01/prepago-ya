@@ -56,9 +56,17 @@ async function isValidCategory(categoria: string): Promise<boolean> {
   }
 }
 
+// Prefijos de rutas del sistema que no deben ser procesadas como slugs de búsqueda
+const SYSTEM_PATH_PREFIXES = ['.well-known', '_next', 'favicon', 'robots', 'sitemap'];
+
 // Función para validar si un departamento es válido usando el backend
 async function isValidDepartment(departamento: string): Promise<boolean> {
   try {
+    // Ignorar rutas del sistema
+    if (SYSTEM_PATH_PREFIXES.some(prefix => departamento.startsWith(prefix))) {
+      return false;
+    }
+
     // Durante build, permitir todos los departamentos
     if (process.env.NODE_ENV === 'production' && !process.env.VERCEL_URL) {
       return true;

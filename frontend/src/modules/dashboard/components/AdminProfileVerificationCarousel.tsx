@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
+import { useConfigValue } from '@/hooks/use-config-parameters';
 import { useProfile } from '@/hooks/use-profile';
 import { useProfileVerification } from '@/hooks/use-profile-verification';
 import { useQueryClient } from '@tanstack/react-query';
@@ -71,6 +72,9 @@ const AdminProfileVerificationCarousel: React.FC<
 
   // Fetch profile data using the hook
   const profileData = useProfile(profileId);
+
+  // Fetch config values for verification thresholds
+  const { value: minAgeMonthsConfig } = useConfigValue<number>('profile.verification.minimum_age_months', { defaultValue: 12 });
 
   // Custom hooks for managing verification changes
   const {
@@ -620,7 +624,7 @@ const AdminProfileVerificationCarousel: React.FC<
                     const accountAgeData = verificationData?.data?.steps?.accountAge as any;
                     const createdAt = profileData.data?.createdAt ? new Date(profileData.data.createdAt) : null;
                     const now = new Date();
-                    const MONTHS_REQUIRED = 12;
+                    const MONTHS_REQUIRED = minAgeMonthsConfig ?? 12;
 
                     const diffMs = createdAt ? now.getTime() - createdAt.getTime() : 0;
                     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
